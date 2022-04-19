@@ -16,7 +16,7 @@ export default async function generate(
   const client_id = req.query.client_id
   const url_id = req.query.url_id
   const url = `${process.env.TEMPLATE_URL}?client_id=${client_id}&url_id=${url_id}`
-  const token = req.cookies.token
+  const token = req.cookies.token || process.env.TOKEN
   const puppeteer = require('puppeteer')
   const browser = await puppeteer.launch()
   //{
@@ -33,12 +33,12 @@ export default async function generate(
     {
       name: 'access',
       value: token,
-      domain: 'localhost',
+      domain: process.env.COOKIE_DOMAIN
     },
     {
       name: 'refresh',
       value: token,
-      domain: 'localhost',
+      domain: process.env.COOKIE_DOMAIN
     },
   ]
   await page.setCookie(...cookies)
@@ -93,3 +93,6 @@ export default async function generate(
   res.end()
   // return res.status(200).json({message: 'Comment submitted'})
 }
+
+
+
