@@ -66,7 +66,9 @@ export default async function generate(
   //   )
   // )
   // await page.waitForTimeout(2000)
-  await page.waitForTimeout(3000)
+  // await page.waitForTimeout(3000)
+  await page.waitForNetworkIdle()
+  await page.setDefaultNavigationTimeout(3000)
   await page.emulateMediaType('screen')
   // await page.screenshot({path: 'ss.png'})
   const pdfBuffer = await page.pdf({
@@ -75,7 +77,7 @@ export default async function generate(
     // height: '768px',
     // preferCSSPageSize: false,
     // margin: {top: 0, right: 0, bottom: 0, left: 0},
-    pageRanges: '1-2',
+    pageRanges: '1',
     // scale:.5
   })
 

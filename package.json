@@ -11,7 +11,7 @@
   "dependencies": {
     "chrome-aws-lambda": "10.1.0",
     "next": "12.1.4",
-    "puppeteer-core": "10.1.0",
+    "puppeteer-core": "13.5.2",
     "react": "18.0.0",
     "react-dom": "18.0.0"
   },
