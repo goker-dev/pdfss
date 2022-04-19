@@ -15,7 +15,7 @@ export default async function generate(
   const template = req.query.template || 'dashboard'
   const client_id = req.query.client_id
   const url_id = req.query.url_id
-  const url = `http://localhost:3341/pdf-template?client_id=${client_id}&url_id=${url_id}`
+  const url = `${process.env.TEMPLATE_URL}?client_id=${client_id}&url_id=${url_id}`
   const token = req.cookies.token
   const puppeteer = require('puppeteer')
   const browser = await puppeteer.launch()
