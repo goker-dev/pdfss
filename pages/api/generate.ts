@@ -1,24 +1,28 @@
 const chrome = require('chrome-aws-lambda')
 const puppeteer = require('puppeteer-core')
 
+const queryStringfy = (query:object) => (Object.entries(query).map(([k, v])=>`${k}=${v}`)).join('&')
+
+// const isLinux = process.platform === "linux";
+// const LINUX_CHROMIUM = "/usr/bin/chromium-browser";
+// const WINDOWS_CHROME = `C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe`;
+
 export default async function generate(
   req: {
-    query: {
-      client_id: number
-      url_id: number
-      template?: string
-      type?: string
-    }
+    query: any
     headers: {token: string}
   },
   res: any
 ) {
   // const {_id, name, email, comment} = JSON.parse(req.body)
-  const type = req.query.type || 'pdf'
-  const template = req.query.template || 'dashboard'
-  const client_id = req.query.client_id
-  const url_id = req.query.url_id
-  const url = `${process.env.TEMPLATE_URL}?client_id=${client_id}&url_id=${url_id}`
+
+  const {type='pdf', template='dashboard', ...query} = req.query
+  // const type = req.query.type || 'pdf'
+  // const template = req.query.template || 'dashboard'
+  // const client_id = req.query.client_id
+  // const url_id = req.query.url_id
+  const url = `${process.env.TEMPLATE_URL}?${queryStringfy(query)}`
+  console.log({url})
   const token = req.headers.token || process.env.TOKEN
   const browser = await puppeteer.launch(
     process.env.AWS_EXECUTION_ENV
@@ -28,7 +32,14 @@ export default async function generate(
           headless: chrome.headless,
         }
       : {
-          args: [],
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--window-size=1024,1024',
+            '--disable-dev-shm-usage',
+            '--unlimited-storage',
+            '--full-memory-crash-report',
+          ],
           executablePath:
             '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         }
@@ -39,7 +50,7 @@ export default async function generate(
   const page = await browser.newPage()
   await page.setViewport({
     width: 1024,
-    height: 768,
+    height: 1024,
     deviceScaleFactor: 2,
   })
   // await page._client.send('Emulation.clearDeviceMetricsOverride')
@@ -57,7 +68,7 @@ export default async function generate(
   ]
   await page.setCookie(...cookies)
   // const cookiesSet = await page.cookies(url);
-  await page.goto(url)
+  await page.goto(url, {waitUntil: 'networkidle2'})
 
   // await page.goto(
   //   ('file://' + __dirname + '/templates/sample.html').replace(
@@ -65,20 +76,35 @@ export default async function generate(
   //     ''
   //   )
   // )
-  // await page.waitForTimeout(2000)
+  await page.waitForTimeout(4000)
   // await page.waitForTimeout(3000)
-  await page.waitForNetworkIdle()
-  await page.setDefaultNavigationTimeout(3000)
-  await page.emulateMediaType('screen')
-  // await page.screenshot({path: 'ss.png'})
+  // await page.waitForNetworkIdle()
+  // await page.setDefaultNavigationTimeout(3000)
+  // await page.emulateMediaType('screen')
+  // let height = await page.evaluate(() => {
+  //   return document.getElementsByTagName('html')[0].offsetHeight
+  // })
+  // const root = await page.$('#root')
+
+  // const bitmap = await page.screenshot({
+  //   path: 'ss.png',
+  //   // clip: {x: 0, y: 0, width: 1024, height},
+  //   fullPage: true,
+  // })
+  // // const bitmap = await root.screenshot()
+  // const ss =
+  //   'data:image/png;base64,' +
+  //   new Buffer(bitmap).toString('base64')
+  // await page.goto(ss, {waitUntil: 'networkidle2'})
   const pdfBuffer = await page.pdf({
     printBackground: true,
-    // width: '800px',
-    // height: '768px',
-    // preferCSSPageSize: false,
-    // margin: {top: 0, right: 0, bottom: 0, left: 0},
-    pageRanges: '1',
-    // scale:.5
+    format: 'letter',
+    // width: '1024px',
+    // height: '1024px',
+    // preferCSSPageSize: true,
+    margin: {top: 16, right: 16, bottom: 16, left: 16},
+    // pageRanges: '1',
+    // scale: 1,
   })
 
   await browser.close()
@@ -100,6 +126,11 @@ export default async function generate(
   //     .status(500)
   //     .json({message: `Couldn't submit comment`, err})
   // }
+  // res.setHeader('Content-Type', 'image/pdf')
+  // res.setHeader(
+  //     'Content-Disposition',
+  //     'attachment; filename=dashboard.pdf'
+  // )
   res.setHeader('Content-Type', 'application/pdf')
   res.setHeader(
     'Content-Disposition',
